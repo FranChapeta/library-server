@@ -33,20 +33,43 @@ router.get('/', function(req, res, next) {
 /* POST book  */
 router.post('/', function(req, res, next) {
   var book = req.body;
-  var queryParams = [ book.name, book.description, book.cover, book.release_date, book.languages ];
-  var sql = "INSERT INTO books (name, description, cover, release_date, languages) VALUES = ?";
-  sql = mysql.format(sql, queryParams);
+  var queryParams1 = [ book.name, book.description, book.cover, book.release_date, book.languages ];
+  var sql1 = "INSERT INTO books (name, description, cover, release_date, languages) VALUES = ?";
+  sql1 = mysql.format(sql1, queryParams1);
 
-  function postBook(callback) {
-    pool.query(sql, function (error, results, fields) {
-      if (error) throw error;
-      callback(results);
+  pool.getConnection(function(err, connection) {
+
+    function postBook(callback) {
+      connection.query(sql1, function (error, results, fields) {
+        if (error) throw error;
+        callback(results);
+      });
+    }
+
+    function postBookAuthors(bookId, callback) {
+      var queryParams2 = [];
+      var sql2 = "INSERT INTO bookauthors (book_id, author_id) VALUES ?";
+      var authors = book.authors;
+      authors.forEach(author => {
+        queryParams2.push([bookId, author.id]);
+      });
+      sql2 = mysql.format(sql2, queryParams2);
+
+      connection.query(sql2, function (error, results, fields) {
+        if (error) throw error;
+        callback(results);
+      });
+    }
+
+    postBook(function(response1) {
+      postBookAuthors(response1.insertId, function(response2) {
+        res.send(response1 + response2);
+        connection.release();
+      });
     });
-  }
 
-  postBook(function(response) {
-      res.send(response);
   });
+  
     
 });
 
@@ -95,28 +118,52 @@ router.get('/:id', function(req, res, next) {
 router.put('/:id', function(req, res, next) {
   var id = req.params.id;
   var book = req.body;
-  var queryParams = [ book.name, book.description, book.cover, book.release_date, book.languages, id ];
-  var sql = "UPDATE books SET name = ?, description = ?, cover = ?, release_date = ?, languages = ? WHERE id = ? ";
-  sql = mysql.format(sql, queryParams);
+  var queryParams1 = [ book.name, book.description, book.cover, book.release_date, book.languages, id ];
+  var sql1 = "UPDATE books SET name = ?, description = ?, cover = ?, release_date = ?, languages = ? WHERE id = ? ";
+  sql1 = mysql.format(sql1, queryParams1);
 
-  function updateBook(callback) {
-    pool.query(sql, function (error, results, fields) {
-      if (error) throw error;
-      callback(results);
+  var queryParams2 = [];
+    var sql2 = "INSERT INTO bookauthors (book_id, author_id) VALUES ?";
+    var authors = book.authors;
+    authors.forEach(author => {
+      queryParams2.push([id, author.id]);
     });
-  }
-  
-  updateBook(function(response) {
-      res.send(response);
+    sql2 = mysql.format(sql2, queryParams2);
+
+  pool.getConnection(function(err, connection) {
+
+    function updateBook(callback) {
+      connection.query(sql1, function (error, results, fields) {
+        if (error) throw error;
+        callback(results);
+      });
+    }
+
+    function updateBookAuthors(callback) {
+      connection.query(sql2, function (error, results, fields) {
+        if (error) throw error;
+        callback(results);
+      });
+    }
+
+    updateBook(function(response1) {
+      updateBookAuthors(function(response2) {
+        res.send(response1 + response2);
+        connection.release();
+      });
+    });
+
   });
 });
 
 /* DELETE book  */
 router.delete('/:id', function(req, res, next) {
   var id = req.params.id;
+  var sql = "DELETE FROM books WHERE id = ?";
+  sql = mysql.format(sql, parseInt(id));
 
   function deleteBook(callback) {
-    pool.query("DELETE books WHERE id = ?", [id], function (error, results, fields) {
+    pool.query(sql, function (error, results, fields) {
       if (error) throw error;
       callback(results);
     });
@@ -127,33 +174,13 @@ router.delete('/:id', function(req, res, next) {
   });
 });
 
-/* POST book authors  */
-router.post('/:id/authors', function(req, res, next) {
-  var bookId = req.params.id;
-  var authors = req.body;
-  var authorsArray = [];
-  authors.forEach(element => {
-    authorsArray.push([bookId, element.id]);
-  });
-
-  function postBookAuthor(callback) {
-    pool.query("INSERT INTO bookauthors (book_id, author_id) VALUES ?", [authorsArray], function (error, results, fields) {
-      if (error) throw error;
-      callback(results);
-    });
-  }
-  
-  postBookAuthor(function(response) {
-      res.send(response);
-  });
-});
-
 /* DELETE book author  */
 router.delete('/:id/authors/:authorid', function(req, res, next) {
-  var queryParams = [req.params.id, req.params.authorid];
-  var sql = "DELETE bookauthors WHERE book_id = ? AND author_id = ? "
+  var queryParams = [parseInt(req.params.id), parseInt(req.params.authorid)];
+  var sql = "DELETE FROM bookauthors WHERE book_id = ? AND author_id = ? "
   sql = mysql.format(sql, queryParams);
-  
+
+
   function deleteBook(callback) {
     pool.query(sql, function (error, results, fields) {
       if (error) throw error;
