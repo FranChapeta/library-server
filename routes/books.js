@@ -34,8 +34,8 @@ router.get('/', function(req, res, next) {
 router.post('/', function(req, res, next) {
   var book = req.body;
   var queryParams1 = [ book.name, book.description, book.cover, book.release_date, book.languages ];
-  var sql1 = "INSERT INTO books (name, description, cover, release_date, languages) VALUES = ?";
-  sql1 = mysql.format(sql1, queryParams1);
+  var sql1 = "INSERT INTO books (name, description, cover, release_date, languages) VALUES (?)";
+  sql1 = mysql.format(sql1, [queryParams1]);
 
   pool.getConnection(function(err, connection) {
 
@@ -51,9 +51,9 @@ router.post('/', function(req, res, next) {
       var sql2 = "INSERT INTO bookauthors (book_id, author_id) VALUES ?";
       var authors = book.authors;
       authors.forEach(author => {
-        queryParams2.push([bookId, author.id]);
+        queryParams2.push([parseInt(bookId), parseInt(author.id)]);
       });
-      sql2 = mysql.format(sql2, queryParams2);
+      sql2 = mysql.format(sql2, [queryParams2]);
 
       connection.query(sql2, function (error, results, fields) {
         if (error) throw error;
@@ -116,17 +116,17 @@ router.get('/:id', function(req, res, next) {
 
 /* UPDATE book  */
 router.put('/:id', function(req, res, next) {
-  var id = req.params.id;
+  var id = parseInt(req.params.id);
   var book = req.body;
   var queryParams1 = [ book.name, book.description, book.cover, book.release_date, book.languages, id ];
   var sql1 = "UPDATE books SET name = ?, description = ?, cover = ?, release_date = ?, languages = ? WHERE id = ? ";
   sql1 = mysql.format(sql1, queryParams1);
 
   var queryParams2 = [];
-    var sql2 = "INSERT INTO bookauthors (book_id, author_id) VALUES ?";
+    var sql2 = "INSERT INTO bookauthors (book_id, author_id) VALUES (?)";
     var authors = book.authors;
     authors.forEach(author => {
-      queryParams2.push([id, author.id]);
+      queryParams2.push([id, parseInt(author.id)]);
     });
     sql2 = mysql.format(sql2, queryParams2);
 

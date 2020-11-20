@@ -19,7 +19,6 @@ router.get('/', function(req, res, next) {
     function getAuthors(callback) {
         pool.query(sql, function (error, results, fields) {
         if (error) throw error;
-        console.log(sql);
         callback(results);
         });
     }
@@ -34,19 +33,20 @@ router.get('/', function(req, res, next) {
 router.post('/', function(req, res, next) {
   var author = req.body;
   var queryParams = [ author.name, author.birth_date, author.country ];
-  var sql = "INSERT INTO authors (name, birth_date, country) VALUES = ?";
-  sql = mysql.format(sql, queryParams);
-
-
+  var sql = "INSERT INTO authors (name, birth_date, country) VALUES (?)";
+  sql = mysql.format(sql, [queryParams]);
+  console.log(sql);
+  
     function postAuthor(callback) {
         pool.query(sql, function (error, results, fields) {
         if (error) throw error;
+        console.log(results);
         callback(results);
         });
     }
 
     postAuthor(function(response) {
-        res.send(response);
+        res.status(200).send(response);
     });
 
 });
@@ -67,7 +67,8 @@ router.get('/:id', function(req, res, next) {
     }
 
     getAuthor(function(response) {
-        res.send(response);
+        var author =  response[0];
+        res.send(author);
     });
 
   } else {
@@ -91,7 +92,10 @@ router.put('/:id', function(req, res, next) {
     }
 
     updateAuthor(function(response) {
-        res.send(response);
+        console.log(response);
+        if (response.affectedRows > 0) {
+          res.status(200).send(response);
+        }
     });
 
 });
@@ -110,7 +114,7 @@ router.delete('/:id', function(req, res, next) {
   }
   
   deleteAuthor(function(response) {
-      res.send(response);
+      res.status(200).send(response);
   });
 });
 
