@@ -5,27 +5,28 @@ var pool = require('../settings');
 
 /* GET authors listing. */
 router.get('/', function(req, res, next) {
-  var order = req.query.order || 'id';
-  var orderType = req.query.ordertype || 'DESC';
-  var pageSize = parseInt(req.query.pagesize) || 20;
-  var pageNumber = parseInt(req.query.pagenumber) || 0;
+  var order = (req.query.order === 'id' || 'name' ? req.query.order : 'id') || 'id';
+  var orderType = (req.query.orderType === 'ASC' || 'DESC' ? req.query.orderType : 'ASC') || 'ASC';
+  var pageSize = parseInt(req.query.pageSize) || 20;
+  var pageNumber = parseInt(req.query.pageNumber) || 1;
   function offset() {
-      return pageNumber === 0 ? 0 : ( pageSize * pageNumber );
+      return pageNumber === 1 ? 0 : ( pageSize  * (pageNumber -1) );
   }
-  var queryParams = [order, orderType, pageSize, offset() ];
-  var sql = "SELECT id, name FROM authors ORDER BY ? ? LIMIT ? OFFSET ?";
+
+  var queryParams = [ pageSize, offset() ];
+  var sql = `SELECT id, name FROM authors ORDER BY ${order} ${orderType} LIMIT ? OFFSET ?`;
   sql = mysql.format(sql, queryParams);
 
-    function getAuthors(callback) {
-        pool.query(sql, function (error, results, fields) {
-        if (error) throw error;
-        callback(results);
-        });
-    }
-
-    getAuthors(function(response) {
-        res.send(response);
+  function getAuthors(callback) {
+    pool.query(sql, function (error, results, fields) {
+      if (error) throw error;
+      callback(results);
     });
+  }
+
+  getAuthors(function(response) {
+    res.send(response);
+  });
   
 });
 
@@ -37,17 +38,17 @@ router.post('/', function(req, res, next) {
   sql = mysql.format(sql, [queryParams]);
   console.log(sql);
   
-    function postAuthor(callback) {
-        pool.query(sql, function (error, results, fields) {
-        if (error) throw error;
-        console.log(results);
-        callback(results);
-        });
-    }
+  function postAuthor(callback) {
+      pool.query(sql, function (error, results, fields) {
+      if (error) throw error;
+      console.log(results);
+      callback(results);
+      });
+  }
 
-    postAuthor(function(response) {
-        res.status(200).send(response);
-    });
+  postAuthor(function(response) {
+      res.status(200).send(response);
+  });
 
 });
 
@@ -84,19 +85,19 @@ router.put('/:id', function(req, res, next) {
   var sql = "UPDATE authors SET name = ?, birth_date = ?, country = ? WHERE id = ? ";
   sql = mysql.format(sql, queryParams);
 
-    function updateAuthor(callback) {
-      pool.query(sql, function (error, results, fields) {
-        if (error) throw error;
-        callback(results);
-      });
-    }
-
-    updateAuthor(function(response) {
-        console.log(response);
-        if (response.affectedRows > 0) {
-          res.status(200).send(response);
-        }
+  function updateAuthor(callback) {
+    pool.query(sql, function (error, results, fields) {
+      if (error) throw error;
+      callback(results);
     });
+  }
+
+  updateAuthor(function(response) {
+      console.log(response);
+      if (response.affectedRows > 0) {
+        res.status(200).send(response);
+      }
+  });
 
 });
 
@@ -116,6 +117,7 @@ router.delete('/:id', function(req, res, next) {
   deleteAuthor(function(response) {
       res.status(200).send(response);
   });
+
 });
 
 module.exports = router;

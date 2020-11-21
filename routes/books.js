@@ -5,21 +5,21 @@ var pool = require('../settings');
 
 /* GET books listing. */
 router.get('/', function(req, res, next) {
-  var order = req.query.order || 'id';
-  var orderType = req.query.ordertype || 'DESC';
-  var pageSize = parseInt(req.query.pagesize) || 20;
-  var pageNumber = parseInt(req.query.pagenumber) || 0;
+  var order = (req.query.order === 'id' || 'name' || 'release_date' ? req.query.order : 'id') || 'id';
+  var orderType = (req.query.orderType === 'ASC' || 'DESC' ? req.query.orderType : 'ASC') || 'ASC';
+  var pageSize = parseInt(req.query.pageSize) || 20;
+  var pageNumber = parseInt(req.query.pageNumber) || 1;
   function offset() {
-      return pageNumber === 0 ? 0 : ( pageSize * pageNumber );
+      return pageNumber === 1 ? 0 : ( pageSize  * (pageNumber -1) );
   }
-  var queryParams = [order, orderType, pageSize, offset() ];
-  var sql = "SELECT id, name, release_date FROM books ORDER BY ? ? LIMIT ? OFFSET ?";
+  
+  var queryParams = [ pageSize, offset() ];
+  var sql = `SELECT id, name, release_date FROM books ORDER BY ${order} ${orderType} LIMIT ? OFFSET ?`;
   sql = mysql.format(sql, queryParams);
 
   function getBooks(callback) {
     pool.query(sql, function (error, results, fields) {
       if (error) throw error;
-      console.log(sql);
       callback(results);
     });
   }
